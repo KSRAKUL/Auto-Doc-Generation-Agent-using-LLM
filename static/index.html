@@ -1,0 +1,1034 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AutoDoc Agent — AI Document Generator</title>
+    <meta name="description" content="Autonomous AI agent that generates polished business documents from natural language requests.">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        /* ── Reset & Base ─────────────────────────────────────────── */
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        :root {
+            --bg-primary: #fcfcfc;
+            --bg-secondary: #f8f9fa;
+            --bg-card: #ffffff;
+            --bg-card-hover: #ffffff;
+            --bg-input: #ffffff;
+            --border: #e2e8f0;
+            --border-focus: #84cc16;
+            --text-primary: #0b0f19;
+            --text-secondary: #475569;
+            --text-muted: #94a3b8;
+            --accent: #84cc16;
+            --accent-hover: #65a30d;
+            --accent-glow: rgba(132, 204, 22, 0.15);
+            --success: #22c55e;
+            --success-bg: rgba(34, 197, 94, 0.08);
+            --warning: #f59e0b;
+            --warning-bg: rgba(245, 158, 11, 0.08);
+            --error: #ef4444;
+            --error-bg: rgba(239, 68, 68, 0.08);
+            --radius: 20px;
+            --radius-sm: 12px;
+            --transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+            --shadow-sm: 0 1px 3px rgba(0,0,0,0.05);
+            --shadow-md: 0 4px 20px rgba(0,0,0,0.03);
+            --shadow-lg: 0 10px 30px rgba(0,0,0,0.06);
+            --shadow-glow: 0 0 30px rgba(132, 204, 22, 0.08);
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            min-height: 100vh;
+            overflow-x: hidden;
+            display: flex;
+        }
+
+        /* ── Split Layout ─────────────────────────────────────────── */
+        .split-layout {
+            display: flex;
+            width: 100vw;
+            min-height: 100vh;
+        }
+
+        /* ── Left Graphic Panel ───────────────────────────────────── */
+        .graphic-panel {
+            width: 45%;
+            background: linear-gradient(135deg, #f0fdf4 0%, #ecfccb 100%);
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            padding: 60px;
+            overflow: hidden;
+            border-right: 1px solid var(--border);
+        }
+
+        @media (max-width: 1024px) {
+            .split-layout { flex-direction: column; }
+            .graphic-panel { width: 100%; min-height: 400px; padding: 40px; }
+        }
+
+        .graphic-header {
+            position: relative;
+            z-index: 2;
+        }
+
+        .graphic-logo {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 18px;
+            font-weight: 700;
+            color: #1e293b;
+        }
+
+        .graphic-logo-icon {
+            width: 24px;
+            height: 24px;
+            background: var(--accent);
+            border-radius: 6px;
+        }
+
+        .graphic-title-area {
+            margin-top: auto;
+            margin-bottom: auto;
+            position: relative;
+            z-index: 2;
+        }
+
+        .graphic-title-area h1 {
+            font-size: 64px;
+            font-weight: 800;
+            line-height: 1.1;
+            letter-spacing: -2px;
+            color: #0f172a;
+            margin-bottom: 24px;
+        }
+
+        .graphic-title-area p {
+            font-size: 16px;
+            line-height: 1.6;
+            color: #475569;
+            max-width: 420px;
+        }
+
+        .graphic-footer {
+            font-size: 12px;
+            color: #64748b;
+            position: relative;
+            z-index: 2;
+        }
+
+        .graphic-footer span {
+            color: #1e293b;
+            font-weight: 600;
+        }
+
+        /* ── Glassmorphic Green Disks (CSS Art inspired by Chain360) ── */
+        .glass-disks-container {
+            position: absolute;
+            top: 10%;
+            right: -10%;
+            width: 100%;
+            height: 80%;
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        .disk {
+            position: absolute;
+            background: rgba(163, 230, 53, 0.35);
+            border: 1px solid rgba(255, 255, 255, 0.6);
+            backdrop-filter: blur(10px);
+            border-radius: 50%;
+            box-shadow: 
+                inset 0 4px 12px rgba(255,255,255,0.4),
+                0 10px 30px rgba(101, 163, 13, 0.15);
+            transform: rotateX(60deg) rotateY(-20deg);
+            transition: all 0.8s ease;
+        }
+
+        .disk-1 { width: 320px; height: 320px; top: 10%; right: 10%; }
+        .disk-2 { width: 260px; height: 260px; top: 35%; right: 25%; background: rgba(132, 204, 22, 0.25); }
+        .disk-3 { width: 200px; height: 200px; top: 58%; right: 40%; background: rgba(163, 230, 53, 0.4); }
+        .disk-4 { width: 140px; height: 140px; top: 78%; right: 52%; background: rgba(132, 204, 22, 0.3); }
+
+        /* Floating Animation */
+        @keyframes float-disk {
+            0%, 100% { transform: rotateX(60deg) rotateY(-20deg) translateY(0); }
+            50% { transform: rotateX(60deg) rotateY(-20deg) translateY(-15px); }
+        }
+
+        .disk-1 { animation: float-disk 6s ease-in-out infinite; }
+        .disk-2 { animation: float-disk 7s ease-in-out infinite 1s; }
+        .disk-3 { animation: float-disk 8s ease-in-out infinite 2s; }
+        .disk-4 { animation: float-disk 9s ease-in-out infinite 3s; }
+
+        /* ── Right Content Panel ──────────────────────────────────── */
+        .content-panel {
+            width: 55%;
+            padding: 60px 80px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 40px;
+        }
+
+        @media (max-width: 1024px) {
+            .content-panel { width: 100%; padding: 40px 24px; }
+        }
+
+        .top-nav {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .header-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 6px 14px;
+            background: #f1f5f9;
+            border: 1px solid var(--border);
+            border-radius: 100px;
+            font-size: 11px;
+            font-weight: 600;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .header-badge .dot {
+            width: 6px;
+            height: 6px;
+            background: var(--success);
+            border-radius: 50%;
+            animation: pulse-dot 2s ease-in-out infinite;
+        }
+
+        @keyframes pulse-dot {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.5; transform: scale(0.8); }
+        }
+
+        /* ── Cards ────────────────────────────────────────────────── */
+        .card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 32px;
+            box-shadow: var(--shadow-sm);
+            transition: var(--transition);
+        }
+
+        .card:hover {
+            box-shadow: var(--shadow-md);
+            border-color: rgba(132, 204, 22, 0.4);
+        }
+
+        .card-title {
+            font-size: 12px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: var(--text-secondary);
+            margin-bottom: 24px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .card-title .icon {
+            font-size: 14px;
+        }
+
+        /* ── Textarea Wrapper ─────────────────────────────────────── */
+        .request-input {
+            width: 100%;
+            min-height: 140px;
+            padding: 20px;
+            background: var(--bg-input);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            color: var(--text-primary);
+            font-family: inherit;
+            font-size: 15px;
+            line-height: 1.6;
+            resize: vertical;
+            transition: var(--transition);
+            outline: none;
+            box-shadow: inset 0 1px 2px rgba(0,0,0,0.02);
+        }
+
+        .request-input::placeholder {
+            color: var(--text-muted);
+        }
+
+        .request-input:focus {
+            border-color: var(--border-focus);
+            box-shadow: 0 0 0 4px var(--accent-glow);
+        }
+
+        .input-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 20px;
+            gap: 16px;
+            flex-wrap: wrap;
+        }
+
+        .quick-prompts {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            flex: 1;
+        }
+
+        .quick-prompt {
+            padding: 8px 14px;
+            background: #f1f5f9;
+            border: 1px solid var(--border);
+            border-radius: 100px;
+            color: var(--text-secondary);
+            font-size: 12px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+
+        .quick-prompt:hover {
+            background: #e2e8f0;
+            color: var(--text-primary);
+        }
+
+        .generate-btn {
+            padding: 12px 32px;
+            background: var(--accent);
+            border: none;
+            border-radius: var(--radius-sm);
+            color: white;
+            font-family: inherit;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: var(--transition);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            box-shadow: 0 4px 12px rgba(132, 204, 22, 0.2);
+        }
+
+        .generate-btn:hover {
+            background: var(--accent-hover);
+            transform: translateY(-1px);
+            box-shadow: 0 6px 16px rgba(132, 204, 22, 0.3);
+        }
+
+        .generate-btn:active {
+            transform: translateY(0);
+        }
+
+        .generate-btn:disabled {
+            background: var(--text-muted);
+            box-shadow: none;
+            cursor: not-allowed;
+            transform: none !important;
+        }
+
+        .generate-btn .spinner {
+            display: none;
+            width: 18px;
+            height: 18px;
+            border: 2px solid rgba(255,255,255,0.3);
+            border-top-color: white;
+            border-radius: 50%;
+            animation: spin 0.7s linear infinite;
+        }
+
+        .generate-btn.loading .spinner { display: block; }
+        .generate-btn.loading .btn-text { display: none; }
+        .generate-btn.loading .btn-icon { display: none; }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* ── Progress Panel ───────────────────────────────────────── */
+        .progress-card {
+            display: none;
+        }
+
+        .progress-card.active {
+            display: block;
+        }
+
+        .progress-steps {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-top: 10px;
+        }
+
+        .step {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+            flex: 1;
+            position: relative;
+        }
+
+        .step::after {
+            content: '';
+            position: absolute;
+            top: 14px;
+            left: 50%;
+            width: 100%;
+            height: 2px;
+            background: var(--border);
+            z-index: 0;
+        }
+
+        .step:last-child::after { display: none; }
+
+        .step-circle {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            background: #ffffff;
+            border: 2px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            font-weight: 700;
+            color: var(--text-muted);
+            position: relative;
+            z-index: 1;
+            transition: var(--transition);
+        }
+
+        .step.active .step-circle {
+            border-color: var(--accent);
+            color: var(--accent);
+            box-shadow: 0 0 12px var(--accent-glow);
+        }
+
+        .step.done .step-circle {
+            background: var(--accent);
+            border-color: var(--accent);
+            color: white;
+        }
+
+        .step-label {
+            font-size: 11px;
+            font-weight: 600;
+            color: var(--text-muted);
+            text-align: center;
+            z-index: 1;
+        }
+
+        .step.active .step-label { color: var(--accent-hover); }
+        .step.done .step-label { color: var(--text-primary); }
+
+        /* ── Results Panel ────────────────────────────────────────── */
+        .results-section {
+            display: none;
+        }
+
+        .results-section.active {
+            display: flex;
+            flex-direction: column;
+            gap: 28px;
+        }
+
+        .results-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 28px;
+        }
+
+        @media (max-width: 640px) {
+            .results-grid { grid-template-columns: 1fr; }
+        }
+
+        .result-header {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            margin-bottom: 24px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .result-icon {
+            width: 42px;
+            height: 42px;
+            background: #f1f5f9;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+        }
+
+        .result-header-text h3 {
+            font-size: 16px;
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+
+        .result-header-text p {
+            font-size: 12px;
+            color: var(--text-secondary);
+            margin-top: 2px;
+        }
+
+        .doc-type-badge {
+            display: inline-flex;
+            padding: 6px 14px;
+            background: #ecfccb;
+            border: 1px solid #d9f99d;
+            border-radius: 100px;
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--accent-hover);
+        }
+
+        /* ── Download Area ────────────────────────────────────────── */
+        .download-card-inner {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 20px;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            gap: 16px;
+        }
+
+        .download-info {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .download-file-icon {
+            font-size: 28px;
+        }
+
+        .download-file-name {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .download-file-meta {
+            font-size: 11px;
+            color: var(--text-muted);
+            margin-top: 2px;
+        }
+
+        .download-btn {
+            padding: 10px 20px;
+            background: var(--accent);
+            border: none;
+            border-radius: var(--radius-sm);
+            color: white;
+            font-family: inherit;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: var(--transition);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            text-decoration: none;
+        }
+
+        .download-btn:hover {
+            background: var(--accent-hover);
+        }
+
+        /* ── Plan Steps List ──────────────────────────────────────── */
+        .plan-list {
+            list-style: none;
+        }
+
+        .plan-list li {
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            padding: 12px 0;
+            border-bottom: 1px solid var(--border);
+            font-size: 14px;
+            color: var(--text-secondary);
+            line-height: 1.5;
+        }
+
+        .plan-list li:last-child { border-bottom: none; }
+
+        .plan-number {
+            min-width: 22px;
+            height: 22px;
+            background: #f1f5f9;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 11px;
+            font-weight: 700;
+            color: var(--text-secondary);
+        }
+
+        /* ── Assumptions ──────────────────────────────────────────── */
+        .assumption-list {
+            list-style: none;
+        }
+
+        .assumption-list li {
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+            padding: 8px 0;
+            font-size: 13px;
+            color: var(--text-secondary);
+            line-height: 1.5;
+        }
+
+        .assumption-list li::before {
+            content: '•';
+            color: var(--accent);
+            font-weight: bold;
+            font-size: 16px;
+            line-height: 12px;
+        }
+
+        /* ── Document History ────────────────────────────────────── */
+        .history-section {
+            margin-top: 10px;
+        }
+
+        .history-list {
+            list-style: none;
+        }
+
+        .history-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 14px 0;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .history-item:last-child { border-bottom: none; }
+
+        .history-item-info {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .history-item-icon { font-size: 18px; }
+
+        .history-item-name {
+            font-size: 14px;
+            font-weight: 500;
+            color: var(--text-primary);
+        }
+
+        .history-item-btn {
+            padding: 6px 14px;
+            background: #f1f5f9;
+            border: 1px solid var(--border);
+            border-radius: 100px;
+            color: var(--text-secondary);
+            font-family: inherit;
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: var(--transition);
+            text-decoration: none;
+        }
+
+        .history-item-btn:hover {
+            background: #e2e8f0;
+            color: var(--text-primary);
+        }
+
+        .empty-history {
+            text-align: center;
+            padding: 24px;
+            color: var(--text-muted);
+            font-size: 13px;
+        }
+
+        /* ── Error Banner ─────────────────────────────────────────── */
+        .error-banner {
+            display: none;
+            padding: 12px 18px;
+            background: var(--error-bg);
+            border: 1px solid rgba(239, 68, 68, 0.2);
+            border-radius: var(--radius-sm);
+            color: var(--error);
+            font-size: 13px;
+            margin-top: 16px;
+            line-height: 1.5;
+        }
+
+        .error-banner.active { display: block; }
+    </style>
+</head>
+<body>
+
+    <div class="split-layout">
+        <!-- ── Left Panel ───────────────────────────────────────────── -->
+        <div class="graphic-panel">
+            <div class="graphic-header">
+                <div class="graphic-logo">
+                    <div class="graphic-logo-icon"></div>
+                    AutoDoc Agent
+                </div>
+            </div>
+            
+            <div class="graphic-title-area">
+                <h1>Autonomous Document Design.</h1>
+                <p>Describe any business document you need — minutes, status reports, proposals — and the AI agent will plan, draft, and assemble a polished Word document instantly.</p>
+            </div>
+
+            <!-- Glassmorphic shapes inspired by the user mockup -->
+            <div class="glass-disks-container">
+                <div class="disk disk-1"></div>
+                <div class="disk disk-2"></div>
+                <div class="disk disk-3"></div>
+                <div class="disk disk-4"></div>
+            </div>
+
+            <div class="graphic-footer">
+                Powered by <span>Ollama + qwen2.5:7b</span> • Fully Local & Secure
+            </div>
+        </div>
+
+        <!-- ── Right Panel ──────────────────────────────────────────── -->
+        <div class="content-panel">
+            <div class="top-nav">
+                <div class="header-badge">
+                    <div class="dot" id="statusDot"></div>
+                    <span id="statusText">Agent Online</span>
+                </div>
+            </div>
+
+            <!-- Request input card -->
+            <div class="card">
+                <div class="card-title"><span class="icon">✍️</span> Describe your Document</div>
+                <textarea
+                    id="requestInput"
+                    class="request-input"
+                    placeholder="Example: Create meeting minutes for a project kickoff meeting between engineering and the client for a new CRM system..."
+                ></textarea>
+                
+                <div class="error-banner" id="errorBanner"></div>
+
+                <div class="input-footer">
+                    <div class="quick-prompts">
+                        <button class="quick-prompt" onclick="setPrompt('meeting')">📋 Kickoff Minutes</button>
+                        <button class="quick-prompt" onclick="setPrompt('status')">📊 Project Status</button>
+                        <button class="quick-prompt" onclick="setPrompt('proposal')">📝 App Proposal</button>
+                    </div>
+                    <button class="generate-btn" id="generateBtn" onclick="generateDocument()">
+                        <span class="btn-icon">⚡</span>
+                        <span class="btn-text">Generate</span>
+                        <div class="spinner"></div>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Agent Progress Card -->
+            <div class="card progress-card" id="progressCard">
+                <div class="card-title"><span class="icon">⏳</span> Agent Pipeline</div>
+                <div class="progress-steps">
+                    <div class="step" id="step1">
+                        <div class="step-circle">1</div>
+                        <span class="step-label">Planning</span>
+                    </div>
+                    <div class="step" id="step2">
+                        <div class="step-circle">2</div>
+                        <span class="step-label">Validating</span>
+                    </div>
+                    <div class="step" id="step3">
+                        <div class="step-circle">3</div>
+                        <span class="step-label">Drafting</span>
+                    </div>
+                    <div class="step" id="step4">
+                        <div class="step-circle">4</div>
+                        <span class="step-label">Generating</span>
+                    </div>
+                    <div class="step" id="step5">
+                        <div class="step-circle">✓</div>
+                        <span class="step-label">Complete</span>
+                    </div>
+                </div>
+                <p style="text-align:center; margin-top:20px; color:var(--text-secondary); font-size:13px;" id="progressText">
+                    The agent is analyzing your request...
+                </p>
+            </div>
+
+            <!-- Results Output Section -->
+            <div class="results-section" id="resultsSection">
+                <div class="card">
+                    <div class="result-header">
+                        <div class="result-icon">✅</div>
+                        <div class="result-header-text">
+                            <h3>Document Generated</h3>
+                            <p id="resultMeta">Ready for download</p>
+                        </div>
+                        <div style="margin-left:auto;">
+                            <span class="doc-type-badge" id="resultDocType">—</span>
+                        </div>
+                    </div>
+
+                    <div class="download-card-inner">
+                        <div class="download-info">
+                            <span class="download-file-icon">📄</span>
+                            <div>
+                                <div class="download-file-name" id="resultFileName">document.docx</div>
+                                <div class="download-file-meta">Microsoft Word Document</div>
+                            </div>
+                        </div>
+                        <a class="download-btn" id="downloadLink" href="#" target="_blank">
+                            Download Document
+                        </a>
+                    </div>
+                </div>
+
+                <div class="results-grid">
+                    <div class="card">
+                        <div class="card-title"><span class="icon">🗺️</span> Task Plan</div>
+                        <ol class="plan-list" id="planList"></ol>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-title"><span class="icon">💡</span> Assumptions</div>
+                        <ul class="assumption-list" id="assumptionList">
+                            <li>No assumptions were needed.</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Documents History Card -->
+            <div class="card history-section">
+                <div class="card-title"><span class="icon">📁</span> Output History</div>
+                <div id="historyContainer">
+                    <div class="empty-history">No documents generated yet.</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const PROMPTS = {
+            meeting: "Create meeting minutes for a project kickoff meeting between engineering and the client for a new CRM system.",
+            status: "I need something for my manager about how the project is going, not sure what format, just make it look professional.",
+            proposal: "Create a project proposal for building a mobile app for a restaurant chain, including timeline, budget estimates, and team structure."
+        };
+
+        function setPrompt(key) {
+            document.getElementById('requestInput').value = PROMPTS[key];
+            document.getElementById('requestInput').focus();
+        }
+
+        async function checkHealth() {
+            try {
+                const res = await fetch('/health');
+                const data = await res.json();
+                if (data.status === 'running') {
+                    document.getElementById('statusDot').style.background = 'var(--success)';
+                    document.getElementById('statusText').textContent = 'Agent Online';
+                }
+            } catch {
+                document.getElementById('statusDot').style.background = 'var(--error)';
+                document.getElementById('statusText').textContent = 'Agent Offline';
+            }
+        }
+
+        async function loadHistory() {
+            try {
+                const res = await fetch('/outputs');
+                const data = await res.json();
+                const container = document.getElementById('historyContainer');
+
+                if (!data.documents || data.documents.length === 0) {
+                    container.innerHTML = '<div class="empty-history">No documents generated yet. Try creating one above!</div>';
+                    return;
+                }
+
+                let html = '<ul class="history-list">';
+                data.documents.forEach(doc => {
+                    html += `
+                        <li class="history-item">
+                            <div class="history-item-info">
+                                <span class="history-item-icon">📄</span>
+                                <span class="history-item-name">${doc}</span>
+                            </div>
+                            <a class="history-item-btn" href="/outputs/${doc}" target="_blank">Download</a>
+                        </li>
+                    `;
+                });
+                html += '</ul>';
+                container.innerHTML = html;
+            } catch (e) {
+                console.error('Failed to load history:', e);
+            }
+        }
+
+        const STEP_MESSAGES = [
+            "The agent is analyzing your request and planning the document structure...",
+            "Validating the plan and checking guardrails...",
+            "Drafting each section with the LLM — this may take a few minutes...",
+            "Assembling the Word document with formatting and tables...",
+            "Done! Your document is ready."
+        ];
+
+        let progressInterval = null;
+
+        function startProgress() {
+            const card = document.getElementById('progressCard');
+            card.classList.add('active');
+
+            for (let i = 1; i <= 5; i++) {
+                document.getElementById('step' + i).className = 'step';
+            }
+
+            let currentStep = 1;
+            document.getElementById('step1').classList.add('active');
+            document.getElementById('progressText').textContent = STEP_MESSAGES[0];
+
+            const timings = [8000, 4000, 45000, 15000];
+            let stepIndex = 0;
+
+            function advanceStep() {
+                if (stepIndex >= timings.length) return;
+
+                progressInterval = setTimeout(() => {
+                    document.getElementById('step' + (stepIndex + 1)).classList.remove('active');
+                    document.getElementById('step' + (stepIndex + 1)).classList.add('done');
+                    stepIndex++;
+                    if (stepIndex < 5) {
+                        document.getElementById('step' + (stepIndex + 1)).classList.add('active');
+                        document.getElementById('progressText').textContent = STEP_MESSAGES[stepIndex];
+                    }
+                    advanceStep();
+                }, timings[stepIndex]);
+            }
+
+            advanceStep();
+        }
+
+        function completeProgress() {
+            clearTimeout(progressInterval);
+            for (let i = 1; i <= 5; i++) {
+                const step = document.getElementById('step' + i);
+                step.className = 'step done';
+            }
+            document.getElementById('progressText').textContent = STEP_MESSAGES[4];
+
+            setTimeout(() => {
+                document.getElementById('progressCard').classList.remove('active');
+            }, 1500);
+        }
+
+        function hideProgress() {
+            clearTimeout(progressInterval);
+            document.getElementById('progressCard').classList.remove('active');
+        }
+
+        async function generateDocument() {
+            const input = document.getElementById('requestInput');
+            const btn = document.getElementById('generateBtn');
+            const errorBanner = document.getElementById('errorBanner');
+            const resultsSection = document.getElementById('resultsSection');
+
+            const request = input.value.trim();
+            if (!request) {
+                errorBanner.textContent = '⚠️ Please enter a document request before generating.';
+                errorBanner.classList.add('active');
+                return;
+            }
+
+            errorBanner.classList.remove('active');
+            resultsSection.classList.remove('active');
+            btn.classList.add('loading');
+            btn.disabled = true;
+
+            startProgress();
+
+            try {
+                const res = await fetch('/agent', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ request })
+                });
+
+                if (!res.ok) {
+                    const err = await res.json();
+                    throw new Error(err.detail || `HTTP ${res.status}`);
+                }
+
+                const data = await res.json();
+                completeProgress();
+
+                setTimeout(() => {
+                    showResults(data);
+                    loadHistory();
+                }, 1800);
+
+            } catch (e) {
+                hideProgress();
+                errorBanner.textContent = `❌ Error: ${e.message}`;
+                errorBanner.classList.add('active');
+            } finally {
+                btn.classList.remove('loading');
+                btn.disabled = false;
+            }
+        }
+
+        function showResults(data) {
+            const section = document.getElementById('resultsSection');
+            document.getElementById('resultDocType').textContent = data.document_type;
+
+            const fileName = data.file_path.split(/[\\/]/).pop();
+            document.getElementById('resultFileName').textContent = fileName;
+            document.getElementById('downloadLink').href = `/outputs/${fileName}`;
+            document.getElementById('resultMeta').textContent = `Generated just now • ${data.document_type}`;
+
+            const planList = document.getElementById('planList');
+            planList.innerHTML = data.plan.map((step, i) =>
+                `<li><span class="plan-number">${i + 1}</span> ${step}</li>`
+            ).join('');
+
+            const assumptionList = document.getElementById('assumptionList');
+            if (data.assumptions && data.assumptions.length > 0) {
+                assumptionList.innerHTML = data.assumptions.map(a =>
+                    `<li>${a}</li>`
+                ).join('');
+            } else {
+                assumptionList.innerHTML = '<li>No assumptions were needed — the request was well-specified.</li>';
+            }
+
+            section.classList.add('active');
+        }
+
+        checkHealth();
+        loadHistory();
+        setInterval(checkHealth, 30000);
+    </script>
+</body>
+</html>
